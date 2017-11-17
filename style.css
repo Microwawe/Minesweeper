@@ -2,7 +2,7 @@ html, body {
 	font-family: sans-serif;
 	margin:  0;
 	padding:  0;
-	--size:  25px;
+	--size: 25px;
 	--light: #dedede;
 	--dark: #202020;
 }
@@ -16,30 +16,29 @@ html, body {
 }
 
 .board {
-	background-color: #aaa;
-	display: grid;
-	grid-template-rows: 1fr 1fr 1fr 1fr 1fr 1fr 1fr 1fr 1fr 1fr;
-	grid-template-columns: 1fr 1fr 1fr 1fr 1fr 1fr 1fr 1fr 1fr 1fr;
-
+	border-spacing: 0px;
 }
 
 .box {
 	width:  var(--size);
 	height: var(--size);
+	text-align: center;
+	vertical-align: middle;
 	background-color: #909090;
+	line-height: var(--size);
+	font-size: 20px;
 	border-top: 2px solid var(--light);
 	border-left: 2px solid var(--light);
 	border-right: 2px solid var(--dark);
 	border-bottom: 2px solid var(--dark);
+	cursor: pointer;
 }
 
-.box-text {
-	text-align: center;
-	vertical-align: middle;
-	line-height: var(--size);
-	font-size: 20px;
+.box-opened {
+	border: 2px solid #aaa;
+	background-color: #ccc;
 }
 
-.bomb {
+.box-opened.bomb {
 	background-color: orange !important;
 }

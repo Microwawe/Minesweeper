@@ -1,109 +1,130 @@
-$(document).ready(function() {
-	let size = parseInt($('.board').css('--size'), 10);
+window.onload = function() {
+	const parentElement = document.querySelector('.centered');
+	const body = document.querySelector('body');
+	const cellSize = getComputedStyle(body).getPropertyValue('--size');
+	
 	let rows = 10;
 	let columns = 10;
-	const minMines = 15;
+	const cells = initBoard(rows, columns, parentElement);
 
-	let boardSize = 12 * size;
-	$('.board').css('height', boardSize + 'px');
-	$('.board').css('width', boardSize + 'px');
-	$('.board').css('padding', size/2 + 'px');
+	for(let i=0;i<cells.length;i++) {
+		const cellElement = cells[i].element;
 
-	const container = $('.centered');
-
-	createBoard(minMines, rows, columns, container);
-
-	// pommin klikkaaminen
-	$('.bomb').on('click', (e) => {
-		console.log("BOOM");
-		$(e.target).removeClass('box');
-		$(e.target).addClass('box-text');
-		$(e.target).html('X');
-	});
-
-	// muiden ruutujen klikkaaminen
-	$('.box').on('click', bombsNearby);
-
-
-
-function createBoard(min, rows, columns, parentDiv) {
-	let html  = '';
-	let mines = 0;
-	let id = 1;
-	for (let i=0; i<rows;i++) {
-		for (let j=0;j<columns;j++) {
-			if(Math.random() < 0.25) {
-				html += '<div id=' + id + ' class="box bomb"></div>'
-				mines++;
-			} else {
-				html += '<div id=' + id + ' class="box"></div>' 
+		//left click
+		cellElement.addEventListener('click', () => {
+			if(cells[i].disabled) return;
+				
+			if(cells[i].isBomb) {
+				gameOver(cells);
+				return;
 			}
-			id++;
-		}
+			openCell(cells[i], cells);
+		});
+
+		// right click
+		cellElement.addEventListener('contextmenu', (e) => {
+			e.preventDefault();
+			if(!e.target.classList.contains('box-opened')) {
+				if(cells[i].disabled) {
+					e.target.textContent = "";
+					cells[i].disabled = false;
+				} else {
+					e.target.textContent = "?";
+					cells[i].disabled = true;
+				}
+			}
+		});
 	}
-	// console.log("mines " + mines);
-	parentDiv.html('<div class="board"></div>');
-	$('.board').html(html);
 }
 
-function bombsNearby(e) {
-	if($(e.target).hasClass('bomb')) {
-		return;
-	}
-	const minID = 1;
-	const maxID = rows * columns;
-	const current = e.target;
-	const id = parseInt(current.id,10);
-	let topID = id - columns;
-	let botID = id + columns;
-	let bombs = 0;
-
-	let adjacent = [];
-
-	// klikatun yläpuolella oleva rivi
-	if(topID >= minID) {
-		let topLeft = topID - 1;
-		let topRight = topID + 1;
-		if ((topLeft % columns) > 0) {
-			adjacent.push(topLeft);
+// makes a new board
+function initBoard(rows, columns, parentElement) {
+	parentElement.innerHTML = '';
+	const board = document.createElement("table");
+	board.classList.add('board');
+	const cells = [];
+	for(let i=0;i<rows;i++) {
+		const row = document.createElement("tr");
+		for(let j=0;j<columns;j++) {
+			const cell = document.createElement("td");
+			const bomb = Math.random() < 0.2;
+			cell.classList.add('box');
+			cells.push({
+				element: cell,
+				pos: {
+					row: i,
+					col: j
+				},
+				isBomb: bomb,
+				disabled: false
+			});
+			if(cells[cells.length-1].isBomb) {
+				cell.classList.add('bomb');
+			}
+			row.appendChild(cell);
 		}
-		adjacent.push(topID);
-		if ((topRight % columns) != 1) {
-			adjacent.push(topRight);
-		}
-	}  
-
-	// klikatun viereiset palikat
-	if((id - 1) % columns > 0) {
-		adjacent.push(id-1);
+		board.appendChild(row);
 	}
-	if((id + 1) % columns != 1) {
-		adjacent.push(id+1);
-	}
+	parentElement.appendChild(board);	
+	return cells;
+}
 
-	// klikatun alapuolella oleva rivi
-	if(botID <= maxID) {
-		let botLeft = botID - 1;
-		let botRight = botID + 1;
-		if ((botLeft % columns) > 0) {
-			adjacent.push(botLeft);
-		}
-		adjacent.push(botID);
-		if ((botRight % columns) != 1) {
-			adjacent.push(botRight);
-		}
-	}
-
-	$.each(adjacent, function(index, id) {
-		if($('#'+id).hasClass('bomb')) {
-			bombs++;
+// return up to 8 cells next to the clicked one
+function getAdjacent(cells, pos) {
+	const positions = [
+		{row: pos.row-1, col: pos.col-1},
+		{row: pos.row-1, col: pos.col},
+		{row: pos.row-1, col: pos.col+1},
+		{row: pos.row, col: pos.col-1},
+		{row: pos.row, col: pos.col+1},
+		{row: pos.row+1, col: pos.col-1},
+		{row: pos.row+1, col: pos.col},
+		{row: pos.row+1, col: pos.col+1},	
+	];
+	const adjacent = cells.filter(cell => {
+		for(let i=0;i<positions.length;i++) {
+			if(positions[i].row === cell.pos.row && positions[i].col === cell.pos.col) {
+				return cell;
+			}
 		}
 	})
-	console.log(adjacent);
-	console.log("bombs " + bombs);
-	$(current).removeClass('box');
-	$(current).addClass('box-text');
-	$(current).html(bombs);
+	return adjacent;	
+} 
+
+// returns number of bombs next to the clicked cell
+function calcBombs(adjacent) {
+	let bombs = 0;
+	adjacent.forEach(cell => {
+		bombs += cell.isBomb ? 1 : 0;
+	});
+	return bombs;
 }
 
-})
+// opens cell and if it's empty -> opens all the adjacent empty cells too
+function openCell(cell, cells) {
+	const pos = cell.pos;
+	const adjacentCells = getAdjacent(cells, pos);
+	const adjacentNotOpen = adjacentCells.filter(cell => !cell.element.classList.contains('box-opened'));
+	const adjacentBombs = calcBombs(adjacentNotOpen);
+	if(cell.isBomb) {
+		cell.element.classList.add('box-opened','bomb');
+		cell.element.textContent = "X";
+	} else if(adjacentBombs === 0) {
+		adjacentNotOpen.forEach(cell => {
+			cell.element.classList.add('box-opened');
+			openCell(cell,cells);	
+		});
+	} else {
+		cell.element.classList.add('box-opened');
+		cell.element.textContent = adjacentBombs;
+	}
+}
+
+// player clicks on a bomb
+function gameOver(cells) {
+	console.log("Game over!");
+	cells.forEach(cell => {
+		cell.element.classList.add('box-opened');
+		openCell(cell, cells);
+	});
+}
