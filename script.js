@@ -24,15 +24,23 @@ window.onload = function() {
 		// right click
 		cellElement.addEventListener('contextmenu', (e) => {
 			e.preventDefault();
-			if(!e.target.classList.contains('box-opened')) {
-				if(cells[i].disabled) {
-					e.target.textContent = "";
-					cells[i].disabled = false;
+			if(e.target.classList.contains('box-opened')) return;
+			
+			if (cells[i].disabled) {
+				const flagIsSet = cells[i].element.firstChild.tagName;
+				if(flagIsSet) {
+					cells[i].element.textContent = "?";
 				} else {
-					e.target.textContent = "?";
-					cells[i].disabled = true;
+					cells[i].element.textContent = "";
+					cells[i].disabled = false;
 				}
+			} else {
+				e.target.innerHTML = "<img src='minesweepericons/flag.svg'>";
+				console.log(cells[i].element.firstChild);
+				console.log("else");
+				cells[i].disabled = true;
 			}
+			
 		});
 	}
 }
@@ -47,7 +55,7 @@ function initBoard(rows, columns, parentElement) {
 		const row = document.createElement("tr");
 		for(let j=0;j<columns;j++) {
 			const cell = document.createElement("td");
-			const bomb = Math.random() < 0.2;
+			const bomb = Math.random() < 0.15; //bomb chance
 			cell.classList.add('box');
 			cells.push({
 				element: cell,
@@ -106,16 +114,14 @@ function openCell(cell, cells) {
 	const adjacentCells = getAdjacent(cells, pos);
 	const adjacentNotOpen = adjacentCells.filter(cell => !cell.element.classList.contains('box-opened'));
 	const adjacentBombs = calcBombs(adjacentNotOpen);
+	cell.element.classList.add('box-opened');
 	if(cell.isBomb) {
-		cell.element.classList.add('box-opened','bomb');
-		cell.element.textContent = "X";
+		cell.element.innerHTML = '<img src="minesweepericons/bomb.svg">';
 	} else if(adjacentBombs === 0) {
 		adjacentNotOpen.forEach(cell => {
-			cell.element.classList.add('box-opened');
 			openCell(cell,cells);	
 		});
 	} else {
-		cell.element.classList.add('box-opened');
 		cell.element.textContent = adjacentBombs;
 	}
 }
