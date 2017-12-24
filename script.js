@@ -1,12 +1,58 @@
 window.onload = function() {
-	const parentElement = document.querySelector('.centered');
 	const body = document.querySelector('body');
 	const cellSize = getComputedStyle(body).getPropertyValue('--size');
+	const easyBtn = document.querySelector('.easy');
+	const medBtn = document.querySelector('.medium');
+	const hardBtn = document.querySelector('.hard');
 	
-	let rows = 10;
-	let columns = 10;
-	const cells = initBoard(rows, columns, parentElement);
+	
+	initBoard(10, 10, 0.15);
+	easyBtn.addEventListener('click', () => {
+		initBoard(10, 10, 0.15);
+	})
 
+	medBtn.addEventListener('click', () => {
+		initBoard(15, 15, 0.20);
+	})
+
+	hardBtn.addEventListener('click', () => {
+		initBoard(20, 20, 0.30);
+	})
+
+	
+}
+
+// makes a new board
+function initBoard(rows, columns, bombChance) {
+	parentElement = document.querySelector('main');
+	parentElement.innerHTML = '';
+	const board = document.createElement("table");
+	board.classList.add('board');
+	const cells = [];
+	for(let i=0;i<rows;i++) {
+		const row = document.createElement("tr");
+		for(let j=0;j<columns;j++) {
+			const cell = document.createElement("td");
+			const bomb = Math.random() < bombChance; //bomb chance
+			cell.classList.add('box');
+			cells.push({
+				element: cell,
+				pos: {
+					row: i,
+					col: j
+				},
+				isBomb: bomb,
+				disabled: false
+			});
+			if(cells[cells.length-1].isBomb) {
+				cell.classList.add('bomb');
+			}
+			row.appendChild(cell);
+		}
+		board.appendChild(row);
+	}
+	parentElement.appendChild(board);	
+	
 	for(let i=0;i<cells.length;i++) {
 		const cellElement = cells[i].element;
 
@@ -40,41 +86,8 @@ window.onload = function() {
 				console.log("else");
 				cells[i].disabled = true;
 			}
-			
 		});
 	}
-}
-
-// makes a new board
-function initBoard(rows, columns, parentElement) {
-	parentElement.innerHTML = '';
-	const board = document.createElement("table");
-	board.classList.add('board');
-	const cells = [];
-	for(let i=0;i<rows;i++) {
-		const row = document.createElement("tr");
-		for(let j=0;j<columns;j++) {
-			const cell = document.createElement("td");
-			const bomb = Math.random() < 0.15; //bomb chance
-			cell.classList.add('box');
-			cells.push({
-				element: cell,
-				pos: {
-					row: i,
-					col: j
-				},
-				isBomb: bomb,
-				disabled: false
-			});
-			if(cells[cells.length-1].isBomb) {
-				cell.classList.add('bomb');
-			}
-			row.appendChild(cell);
-		}
-		board.appendChild(row);
-	}
-	parentElement.appendChild(board);	
-	return cells;
 }
 
 // return up to 8 cells next to the clicked one
@@ -112,7 +125,8 @@ function calcBombs(adjacent) {
 function openCell(cell, cells) {
 	const pos = cell.pos;
 	const adjacentCells = getAdjacent(cells, pos);
-	const adjacentNotOpen = adjacentCells.filter(cell => !cell.element.classList.contains('box-opened'));
+	const alreadyOpen = cell.element.classList.contains('box-opened');
+	const adjacentNotOpen = adjacentCells.filter(cell => !alreadyOpen);
 	const adjacentBombs = calcBombs(adjacentNotOpen);
 	cell.element.classList.add('box-opened');
 	if(cell.isBomb) {
